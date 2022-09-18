@@ -1,7 +1,14 @@
+/*
+* PETSCII SHooter
+*
+* This game is an attempt to write a c64 petscii graphics shooter
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
 #include <peekpoke.h>
+
 
 #define SCREEN_RAM ((char*)0x0400)
 #define COLOUR_RAM ((char*)0xd800)
