@@ -22,6 +22,7 @@
 #define JOY_BUTTON 0x10
 
 unsigned char i = 0;
+unsigned char j = 0;
 
 unsigned char joy1, joy2;
 
@@ -49,6 +50,8 @@ typedef struct enemies{
     unsigned char y[MAX_ENEMIES];
     unsigned char prev_x[MAX_ENEMIES];
     unsigned char prev_y[MAX_ENEMIES];
+    unsigned char size_x[MAX_ENEMIES];
+    unsigned char size_y[MAX_ENEMIES];
     unsigned char live[MAX_ENEMIES];
     unsigned char explode_seq[MAX_ENEMIES];
 } s_enemies;
@@ -142,7 +145,7 @@ void drawProjectiles()
                 projectiles.projectile_flag[i] = 0;
                 base_address = projectiles.y[i]* 40 + projectiles.x[i];
                 POKE(SCREEN_RAM + base_address, 0x20);
-                draw_explosion(projectiles.x[i], projectiles.y[i]-1);
+                //draw_explosion(projectiles.x[i], projectiles.y[i]-1);
             }
             else
             {
@@ -285,6 +288,7 @@ void updateEnemyPositions()
     timeToUpdate = timeToUpdate + 1;
     if ( timeToUpdate > 5)
     {
+        bordercolor (COLOR_GREEN);
         if(enemies.y[0] >19)
             enemy_direction = 1;
         if(enemies.y[0] <3)
@@ -304,7 +308,23 @@ void updateProjectilePositions()
 }
 void checkForCollisions()
 {
-
+    for(i = 0; i < MAX_ENEMIES; i++)
+    {
+        for( j=0; j < MAX_PROJECTILES; j++ )
+        {
+            // check that enemy is live
+            if(enemies.live[i] && projectiles.projectile_flag[j])
+            {
+                if( projectiles.x[j] >= enemies.x[i] && projectiles.x[j] <=  enemies.x[i] + enemies.size_x[i])
+                {
+                    if( projectiles.y[j] >= enemies.y[i] && projectiles.y[j] <= enemies.y[i] + enemies.size_y[i])
+                    {
+                        bordercolor (COLOR_RED);
+                    }
+                }
+            }
+        }
+    }
 }
 void updateScore()
 {
@@ -340,6 +360,9 @@ int main(void)
     player.y =5;
     enemies.x[0] = 30;
     enemies.y[0] = 10;
+    enemies.live[0] = 1;
+    enemies.size_x[0] = 4;
+    enemies.size_y[0] = 5;
     player.prev_x = player.x;
     player.prev_y = player.y;
 
