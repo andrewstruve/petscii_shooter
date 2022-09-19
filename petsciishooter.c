@@ -60,6 +60,9 @@ s_projectiles projectiles;
 s_player player;
 s_enemies enemies;
 
+unsigned y_lut[25] = {1024, 1064, 1104, 1144, 1184, 1224, 1264, 1304, 1344, 1384, 1424,
+                    1464, 1504 , 1544, 1584, 1624, 1664, 1704 ,1744, 1784 , 1824, 1864 , 1904 ,1944 , 1984 };
+
 unsigned char prev_joy_button;
 
 // Wait for raster line
@@ -72,31 +75,31 @@ void rasterWait(int cnt) {
 }
 void clearPlayer()
 {
-    unsigned int base_address = player.prev_y * 40 + player.prev_x;
-    POKE(SCREEN_RAM + base_address, 0x20);
-    POKE(SCREEN_RAM + base_address+1, 0x20);
-    POKE(SCREEN_RAM + base_address+2, 0x20);
-    POKE(SCREEN_RAM + base_address+40, 0x20);
-    POKE(SCREEN_RAM + base_address+41, 0x20);
-    POKE(SCREEN_RAM + base_address+42, 0x20);
-    POKE(SCREEN_RAM + base_address+43, 0x20);
-    POKE(SCREEN_RAM + base_address+80, 0x20);
-    POKE(SCREEN_RAM + base_address+81, 0x20);
-    POKE(SCREEN_RAM + base_address+82, 0x20);    
+    unsigned base_address = y_lut[player.prev_y] + player.prev_x;
+    POKE(base_address, 0x20);
+    POKE(base_address+1, 0x20);
+    POKE(base_address+2, 0x20);
+    POKE(base_address+40, 0x20);
+    POKE(base_address+41, 0x20);
+    POKE(base_address+42, 0x20);
+    POKE(base_address+43, 0x20);
+    POKE(base_address+80, 0x20);
+    POKE(base_address+81, 0x20);
+    POKE(base_address+82, 0x20);    
 }
 void drawPlayer()
 {
-    unsigned int base_address = player.y * 40 + player.x;
-    POKE(SCREEN_RAM + base_address, 0x70);
-    POKE(SCREEN_RAM + base_address+1, 0x43);
-    POKE(SCREEN_RAM + base_address+2, 0x6E);
-    POKE(SCREEN_RAM + base_address+40, 0x42);
-    POKE(SCREEN_RAM + base_address+41, 0x66);
-    POKE(SCREEN_RAM + base_address+42, 0x6B);
-    POKE(SCREEN_RAM + base_address+43, 0x40);
-    POKE(SCREEN_RAM + base_address+80, 0x6D);
-    POKE(SCREEN_RAM + base_address+81, 0x43);
-    POKE(SCREEN_RAM + base_address+82, 0x7D);
+    unsigned base_address = y_lut[player.y] + player.x;
+    POKE(base_address, 0x70);
+    POKE(base_address+1, 0x43);
+    POKE(base_address+2, 0x6E);
+    POKE(base_address+40, 0x42);
+    POKE(base_address+41, 0x66);
+    POKE(base_address+42, 0x6B);
+    POKE(base_address+43, 0x40);
+    POKE(base_address+80, 0x6D);
+    POKE(base_address+81, 0x43);
+    POKE(base_address+82, 0x7D);
 }
 void start_projectile()
 {
@@ -116,7 +119,8 @@ void start_projectile()
 }
 void draw_explosion(char x, char y)
 {
-    unsigned int base_address = y * 40 + x;
+    //unsigned int base_address = y_lut[y]+ x;
+    unsigned  base_address = y*40+ x;
     POKE(SCREEN_RAM + base_address, 0x2A);
     POKE(SCREEN_RAM + base_address+1, 0x20);
     POKE(SCREEN_RAM + base_address+2, 0x2A);
@@ -135,73 +139,76 @@ void drawProjectiles()
     {
         if(projectiles.projectile_flag[i] == 1)
         {
-            unsigned int base_address = projectiles.y[i]* 40 + projectiles.x[i];
+            unsigned base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
+            //unsigned base_address = projectiles.y[i]*40+ projectiles.x[i];
             // clear old projectile
-            POKE(SCREEN_RAM + base_address, 0x20);
+            POKE(base_address, 0x20);
             // update new position
             projectiles.x[i] = projectiles.x[i]+ projectiles.x_vel[i];
             if(projectiles.x[i] > 36)
             {
                 projectiles.projectile_flag[i] = 0;
-                base_address = projectiles.y[i]* 40 + projectiles.x[i];
-                POKE(SCREEN_RAM + base_address, 0x20);
+                base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
+                POKE(base_address, 0x20);
                 //draw_explosion(projectiles.x[i], projectiles.y[i]-1);
             }
             else
             {
-                base_address = projectiles.y[i]* 40 + projectiles.x[i];
-                POKE(SCREEN_RAM + base_address, 0x51);
+                base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
+                POKE(base_address, 0x51);
             }
         }
     }
 }
 void clearEnemy()
 {
-    unsigned int base_address = enemies.prev_y[0] * 40 + enemies.prev_x[0];
-    POKE(SCREEN_RAM + base_address, 0x20);
-    POKE(SCREEN_RAM + base_address+1, 0x20);
-    POKE(SCREEN_RAM + base_address+2, 0x20);
-    POKE(SCREEN_RAM + base_address+3, 0x20);
-    POKE(SCREEN_RAM + base_address+40, 0x20);
-    POKE(SCREEN_RAM + base_address+41, 0x20);
-    POKE(SCREEN_RAM + base_address+42, 0x20);
-    POKE(SCREEN_RAM + base_address+43, 0x20);
-    POKE(SCREEN_RAM + base_address+80, 0x20);
-    POKE(SCREEN_RAM + base_address+81, 0x20);
-    POKE(SCREEN_RAM + base_address+82, 0x20);
-    POKE(SCREEN_RAM + base_address+83, 0x20);
-    POKE(SCREEN_RAM + base_address+120, 0x20);
-    POKE(SCREEN_RAM + base_address+121, 0x20);
-    POKE(SCREEN_RAM + base_address+122, 0x20);
-    POKE(SCREEN_RAM + base_address+123, 0x20);
-    POKE(SCREEN_RAM + base_address+160, 0x20);
-    POKE(SCREEN_RAM + base_address+161, 0x20);
-    POKE(SCREEN_RAM + base_address+162, 0x20);
-    POKE(SCREEN_RAM + base_address+163, 0x20);    
+    unsigned base_address = y_lut[enemies.prev_y[0]] + enemies.prev_x[0];
+    //unsigned base_address = enemies.prev_y[0]*40 + enemies.prev_x[0];
+    POKE(base_address, 0x20);
+    POKE(base_address+1, 0x20);
+    POKE(base_address+2, 0x20);
+    POKE(base_address+3, 0x20);
+    POKE(base_address+40, 0x20);
+    POKE(base_address+41, 0x20);
+    POKE(base_address+42, 0x20);
+    POKE(base_address+43, 0x20);
+    POKE(base_address+80, 0x20);
+    POKE(base_address+81, 0x20);
+    POKE(base_address+82, 0x20);
+    POKE(base_address+83, 0x20);
+    POKE(base_address+120, 0x20);
+    POKE(base_address+121, 0x20);
+    POKE(base_address+122, 0x20);
+    POKE(base_address+123, 0x20);
+    POKE(base_address+160, 0x20);
+    POKE(base_address+161, 0x20);
+    POKE(base_address+162, 0x20);
+    POKE(base_address+163, 0x20);    
 }
 void drawEnemy()
 {
-    unsigned int base_address = enemies.y[0] * 40 + enemies.x[0];
-    POKE(SCREEN_RAM + base_address, 0x20);
-    POKE(SCREEN_RAM + base_address+1, 0x70);
-    POKE(SCREEN_RAM + base_address+2, 0x40);
-    POKE(SCREEN_RAM + base_address+3, 0x6E);
-    POKE(SCREEN_RAM + base_address+40, 0x20);
-    POKE(SCREEN_RAM + base_address+41, 0x5D);
-    POKE(SCREEN_RAM + base_address+42, 0x41);
-    POKE(SCREEN_RAM + base_address+43, 0x5D);
-    POKE(SCREEN_RAM + base_address+80, 0x40);
-    POKE(SCREEN_RAM + base_address+81, 0x73);
-    POKE(SCREEN_RAM + base_address+82, 0x53);
-    POKE(SCREEN_RAM + base_address+83, 0x5D);
-    POKE(SCREEN_RAM + base_address+120, 0x20);
-    POKE(SCREEN_RAM + base_address+121, 0x5D);
-    POKE(SCREEN_RAM + base_address+122, 0x41);
-    POKE(SCREEN_RAM + base_address+123, 0x5D);
-    POKE(SCREEN_RAM + base_address+160, 0x20);
-    POKE(SCREEN_RAM + base_address+161, 0x6D);
-    POKE(SCREEN_RAM + base_address+162, 0x40);
-    POKE(SCREEN_RAM + base_address+163, 0x7D);
+    //unsigned base_address = y_lut[enemies.y[0]] + enemies.x[0];
+    unsigned base_address = y_lut[enemies.y[0]] + enemies.x[0];
+    POKE(base_address, 0x20);
+    POKE(base_address+1, 0x70);
+    POKE(base_address+2, 0x40);
+    POKE(base_address+3, 0x6E);
+    POKE(base_address+40, 0x20);
+    POKE(base_address+41, 0x5D);
+    POKE(base_address+42, 0x41);
+    POKE(base_address+43, 0x5D);
+    POKE(base_address+80, 0x40);
+    POKE(base_address+81, 0x73);
+    POKE(base_address+82, 0x53);
+    POKE(base_address+83, 0x5D);
+    POKE(base_address+120, 0x20);
+    POKE(base_address+121, 0x5D);
+    POKE(base_address+122, 0x41);
+    POKE(base_address+123, 0x5D);
+    POKE(base_address+160, 0x20);
+    POKE(base_address+161, 0x6D);
+    POKE(base_address+162, 0x40);
+    POKE(base_address+163, 0x7D);
 }
 
 void readJoysticks()
