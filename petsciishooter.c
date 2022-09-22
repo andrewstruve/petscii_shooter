@@ -35,6 +35,7 @@ typedef struct projectiles_type{
     unsigned char x_vel[MAX_PROJECTILES];
     unsigned char y_vel[MAX_PROJECTILES];
     unsigned char projectile_flag[MAX_PROJECTILES];
+    unsigned char clear[MAX_PROJECTILES];
 } s_projectiles;
 
 typedef struct player_type{
@@ -54,6 +55,8 @@ typedef struct enemies{
     unsigned char size_y[MAX_ENEMIES];
     unsigned char live[MAX_ENEMIES];
     unsigned char explode_seq[MAX_ENEMIES];
+    unsigned char explode_frames[MAX_ENEMIES];
+    unsigned char hit_points[MAX_ENEMIES];
 } s_enemies;
 
 s_projectiles projectiles;
@@ -117,6 +120,19 @@ void start_projectile()
         }
     }
 }
+void clear_explosion(char x, char y)
+{
+    unsigned  base_address = y*40+ x;
+    POKE(SCREEN_RAM + base_address, 0x20);
+    POKE(SCREEN_RAM + base_address+1, 0x20);
+    POKE(SCREEN_RAM + base_address+2, 0x20);
+    POKE(SCREEN_RAM + base_address+40, 0x20);
+    POKE(SCREEN_RAM + base_address+41, 0x20);
+    POKE(SCREEN_RAM + base_address+42, 0x20);
+    POKE(SCREEN_RAM + base_address+80, 0x20);
+    POKE(SCREEN_RAM + base_address+81, 0x20);
+    POKE(SCREEN_RAM + base_address+82, 0x20);    
+}
 void draw_explosion(char x, char y)
 {
     //unsigned int base_address = y_lut[y]+ x;
@@ -131,32 +147,47 @@ void draw_explosion(char x, char y)
     POKE(SCREEN_RAM + base_address+81, 0x20);
     POKE(SCREEN_RAM + base_address+82, 0x2A);
 }
-void drawProjectiles()
+void updateProjectilePositions()
 {
-    
-    //POKE(SCREEN_RAM + base_address+44, 0x51);
     for (i = 0; i < MAX_PROJECTILES; i++)
     {
         if(projectiles.projectile_flag[i] == 1)
         {
-            unsigned base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
-            //unsigned base_address = projectiles.y[i]*40+ projectiles.x[i];
+            projectiles.prev_x[i] = projectiles.x[i];
+            projectiles.prev_y[i] = projectiles.y[i];
+            projectiles.x[i] = projectiles.x[i]+ projectiles.x_vel[i];
+        }
+    }
+}
+void drawProjectiles()
+{
+    for (i = 0; i < MAX_PROJECTILES; i++)
+    {
+        if(projectiles.projectile_flag[i] == 1)
+        {
+            unsigned base_address = y_lut[projectiles.prev_y[i]]+ projectiles.prev_x[i];
             // clear old projectile
             POKE(base_address, 0x20);
-            // update new position
-            projectiles.x[i] = projectiles.x[i]+ projectiles.x_vel[i];
+
             if(projectiles.x[i] > 36)
             {
                 projectiles.projectile_flag[i] = 0;
                 base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
                 POKE(base_address, 0x20);
-                //draw_explosion(projectiles.x[i], projectiles.y[i]-1);
             }
             else
             {
                 base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
                 POKE(base_address, 0x51);
             }
+        }
+        if(projectiles.clear[i])
+        {
+            unsigned base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
+            POKE(base_address, 0x20);
+            base_address = y_lut[projectiles.prev_y[i]]+ projectiles.prev_x[i];
+            POKE(base_address, 0x20);
+            projectiles.clear[i] = 0;
         }
     }
 }
@@ -187,28 +218,50 @@ void clearEnemy()
 }
 void drawEnemy()
 {
-    //unsigned base_address = y_lut[enemies.y[0]] + enemies.x[0];
     unsigned base_address = y_lut[enemies.y[0]] + enemies.x[0];
-    POKE(base_address, 0x20);
-    POKE(base_address+1, 0x70);
-    POKE(base_address+2, 0x40);
-    POKE(base_address+3, 0x6E);
-    POKE(base_address+40, 0x20);
-    POKE(base_address+41, 0x5D);
-    POKE(base_address+42, 0x41);
-    POKE(base_address+43, 0x5D);
-    POKE(base_address+80, 0x40);
-    POKE(base_address+81, 0x73);
-    POKE(base_address+82, 0x53);
-    POKE(base_address+83, 0x5D);
-    POKE(base_address+120, 0x20);
-    POKE(base_address+121, 0x5D);
-    POKE(base_address+122, 0x41);
-    POKE(base_address+123, 0x5D);
-    POKE(base_address+160, 0x20);
-    POKE(base_address+161, 0x6D);
-    POKE(base_address+162, 0x40);
-    POKE(base_address+163, 0x7D);
+    if(enemies.explode_seq[0] == 1 )
+    {
+        if(enemies.explode_frames[0] < 20)
+        {
+            draw_explosion(enemies.x[0], enemies.y[0]); 
+            enemies.explode_frames[0]++;
+        }
+        else
+        {
+            clear_explosion(enemies.x[0], enemies.y[0]);
+            enemies.explode_seq[0] = 0;
+            enemies.explode_frames[0] = 0;
+        }
+
+    }
+    else if (enemies.live[0] == 1 )
+    {
+        POKE(base_address, 0x20);
+        POKE(base_address+1, 0x70);
+        POKE(base_address+2, 0x40);
+        POKE(base_address+3, 0x6E);
+        POKE(base_address+40, 0x20);
+        POKE(base_address+41, 0x5D);
+        POKE(base_address+42, 0x41);
+        POKE(base_address+43, 0x5D);
+        POKE(base_address+80, 0x40);
+        POKE(base_address+81, 0x73);
+
+        POKE(base_address+82, 0x30+ enemies.hit_points[0]);
+
+        POKE(base_address+83, 0x5D);
+        POKE(base_address+120, 0x20);
+        POKE(base_address+121, 0x5D);
+        POKE(base_address+122, 0x41);
+        POKE(base_address+123, 0x5D);
+        POKE(base_address+160, 0x20);
+        POKE(base_address+161, 0x6D);
+        POKE(base_address+162, 0x40);
+        POKE(base_address+163, 0x7D);
+    }
+    
+
+    
 }
 
 void readJoysticks()
@@ -292,25 +345,26 @@ unsigned char enemy_direction = 0;
 unsigned char timeToUpdate = 0;
 void updateEnemyPositions()
 {
-    timeToUpdate = timeToUpdate + 1;
-    if ( timeToUpdate > 5)
+    bordercolor (COLOR_GREEN);
+    if(enemies.live[0] == 1)
     {
-        bordercolor (COLOR_GREEN);
-        if(enemies.y[0] >19)
-            enemy_direction = 1;
-        if(enemies.y[0] <3)
-            enemy_direction = 0;
-        
-        if(enemy_direction)
-            enemies.y[0] = enemies.y[0] -1;
-        else
-            enemies.y[0] = enemies.y[0] + 1;
-        
-        timeToUpdate = 0;
+        if ( timeToUpdate > 5)
+        {
+            
+            if(enemies.y[0] >19)
+                enemy_direction = 1;
+            if(enemies.y[0] <3)
+                enemy_direction = 0;
+            
+            if(enemy_direction)
+                enemies.y[0] = enemies.y[0] -1;
+            else
+                enemies.y[0] = enemies.y[0] + 1;
+            
+            timeToUpdate = 0;
+        }
     }
-}
-void updateProjectilePositions()
-{
+    timeToUpdate = timeToUpdate + 1;
 
 }
 void checkForCollisions()
@@ -329,6 +383,20 @@ void checkForCollisions()
                         if( projectiles.y[j] >= enemies.y[i] && projectiles.y[j] <= enemies.y[i] + enemies.size_y[i])
                         {
                             bordercolor (COLOR_RED);
+                            // disable projectile
+                            projectiles.projectile_flag[j] = 0;
+                            projectiles.clear[j] = 1;
+                            if(enemies.hit_points[i] > 0)
+                            {
+                                enemies.hit_points[i]--;
+                                if( enemies.hit_points[i] == 0)
+                                {
+                                    enemies.live[i] = 0;
+                                    enemies.explode_seq[i] = 1;
+                                }
+                            }
+                            
+                                
                         }
                     }
                 }
@@ -361,6 +429,8 @@ void drawScreen()
     enemies.prev_x[0] = enemies.x[0];
     enemies.prev_y[0] = enemies.y[0];
 }
+// petscii/uppercase mode 
+#define PETSCII_UPPERCASE_MODE 53272u
 int main(void)
 {
     /* Set screen colors */
@@ -372,6 +442,7 @@ int main(void)
     enemies.x[0] = 30;
     enemies.y[0] = 10;
     enemies.live[0] = 1;
+    enemies.hit_points[0] = 5;
     enemies.size_x[0] = 4;
     enemies.size_y[0] = 5;
     player.prev_x = player.x;
@@ -385,7 +456,7 @@ int main(void)
     clrscr ();
     
     //cgetc();
-    POKE(53272,21); // use Uppercase/Petscii mode
+    POKE(PETSCII_UPPERCASE_MODE,21); // use Uppercase/Petscii mode
     while(1)
     {
         rasterWait(3);
