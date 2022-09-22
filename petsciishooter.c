@@ -53,10 +53,14 @@ typedef struct enemies{
     unsigned char prev_y[MAX_ENEMIES];
     unsigned char size_x[MAX_ENEMIES];
     unsigned char size_y[MAX_ENEMIES];
+    unsigned char x_vel[MAX_ENEMIES];
+    unsigned char y_vel[MAX_ENEMIES];
+    unsigned char direction[MAX_ENEMIES];
     unsigned char live[MAX_ENEMIES];
     unsigned char explode_seq[MAX_ENEMIES];
     unsigned char explode_frames[MAX_ENEMIES];
     unsigned char hit_points[MAX_ENEMIES];
+    unsigned char timeToUpdate[MAX_ENEMIES];
 } s_enemies;
 
 s_projectiles projectiles;
@@ -193,71 +197,77 @@ void drawProjectiles()
 }
 void clearEnemy()
 {
-    unsigned base_address = y_lut[enemies.prev_y[0]] + enemies.prev_x[0];
-    //unsigned base_address = enemies.prev_y[0]*40 + enemies.prev_x[0];
-    POKE(base_address, 0x20);
-    POKE(base_address+1, 0x20);
-    POKE(base_address+2, 0x20);
-    POKE(base_address+3, 0x20);
-    POKE(base_address+40, 0x20);
-    POKE(base_address+41, 0x20);
-    POKE(base_address+42, 0x20);
-    POKE(base_address+43, 0x20);
-    POKE(base_address+80, 0x20);
-    POKE(base_address+81, 0x20);
-    POKE(base_address+82, 0x20);
-    POKE(base_address+83, 0x20);
-    POKE(base_address+120, 0x20);
-    POKE(base_address+121, 0x20);
-    POKE(base_address+122, 0x20);
-    POKE(base_address+123, 0x20);
-    POKE(base_address+160, 0x20);
-    POKE(base_address+161, 0x20);
-    POKE(base_address+162, 0x20);
-    POKE(base_address+163, 0x20);    
+    for(i = 0; i < MAX_ENEMIES; i++)
+    {
+        unsigned base_address = y_lut[enemies.prev_y[i]] + enemies.prev_x[i];
+        POKE(base_address, 0x20);
+        POKE(base_address+1, 0x20);
+        POKE(base_address+2, 0x20);
+        POKE(base_address+3, 0x20);
+        POKE(base_address+40, 0x20);
+        POKE(base_address+41, 0x20);
+        POKE(base_address+42, 0x20);
+        POKE(base_address+43, 0x20);
+        POKE(base_address+80, 0x20);
+        POKE(base_address+81, 0x20);
+        POKE(base_address+82, 0x20);
+        POKE(base_address+83, 0x20);
+        POKE(base_address+120, 0x20);
+        POKE(base_address+121, 0x20);
+        POKE(base_address+122, 0x20);
+        POKE(base_address+123, 0x20);
+        POKE(base_address+160, 0x20);
+        POKE(base_address+161, 0x20);
+        POKE(base_address+162, 0x20);
+        POKE(base_address+163, 0x20); 
+    }   
 }
 void drawEnemy()
 {
-    unsigned base_address = y_lut[enemies.y[0]] + enemies.x[0];
-    if(enemies.explode_seq[0] == 1 )
+    for(i = 0; i < MAX_ENEMIES; i++)
     {
-        if(enemies.explode_frames[0] < 20)
+        
+        if(enemies.explode_seq[i] == 1 )
         {
-            draw_explosion(enemies.x[0], enemies.y[0]); 
-            enemies.explode_frames[0]++;
+            if(enemies.explode_frames[i] < 20)
+            {
+                draw_explosion(enemies.x[i], enemies.y[i]); 
+                enemies.explode_frames[i]++;
+            }
+            else
+            {
+                clear_explosion(enemies.x[i], enemies.y[i]);
+                enemies.explode_seq[i] = 0;
+                enemies.explode_frames[i] = 0;
+            }
+
         }
-        else
+        else if (enemies.live[i] == 1 )
         {
-            clear_explosion(enemies.x[0], enemies.y[0]);
-            enemies.explode_seq[0] = 0;
-            enemies.explode_frames[0] = 0;
+            unsigned base_address = y_lut[enemies.y[i]] + enemies.x[i];
+            POKE(base_address, 0x20);
+            POKE(base_address+1, 0x70);
+            POKE(base_address+2, 0x40);
+            POKE(base_address+3, 0x6E);
+            POKE(base_address+40, 0x20);
+            POKE(base_address+41, 0x5D);
+            POKE(base_address+42, 0x41);
+            POKE(base_address+43, 0x5D);
+            POKE(base_address+80, 0x40);
+            POKE(base_address+81, 0x73);
+
+            POKE(base_address+82, 0x30+ enemies.hit_points[i]);
+
+            POKE(base_address+83, 0x5D);
+            POKE(base_address+120, 0x20);
+            POKE(base_address+121, 0x5D);
+            POKE(base_address+122, 0x41);
+            POKE(base_address+123, 0x5D);
+            POKE(base_address+160, 0x20);
+            POKE(base_address+161, 0x6D);
+            POKE(base_address+162, 0x40);
+            POKE(base_address+163, 0x7D);
         }
-
-    }
-    else if (enemies.live[0] == 1 )
-    {
-        POKE(base_address, 0x20);
-        POKE(base_address+1, 0x70);
-        POKE(base_address+2, 0x40);
-        POKE(base_address+3, 0x6E);
-        POKE(base_address+40, 0x20);
-        POKE(base_address+41, 0x5D);
-        POKE(base_address+42, 0x41);
-        POKE(base_address+43, 0x5D);
-        POKE(base_address+80, 0x40);
-        POKE(base_address+81, 0x73);
-
-        POKE(base_address+82, 0x30+ enemies.hit_points[0]);
-
-        POKE(base_address+83, 0x5D);
-        POKE(base_address+120, 0x20);
-        POKE(base_address+121, 0x5D);
-        POKE(base_address+122, 0x41);
-        POKE(base_address+123, 0x5D);
-        POKE(base_address+160, 0x20);
-        POKE(base_address+161, 0x6D);
-        POKE(base_address+162, 0x40);
-        POKE(base_address+163, 0x7D);
     }
     
 
@@ -342,29 +352,31 @@ void updatePlayerPosition()
     prev_joy_button = (joy2 & JOY_BUTTON);
 }
 unsigned char enemy_direction = 0;
-unsigned char timeToUpdate = 0;
 void updateEnemyPositions()
 {
     bordercolor (COLOR_GREEN);
-    if(enemies.live[0] == 1)
+    for(i = 0; i < MAX_ENEMIES; i++)
     {
-        if ( timeToUpdate > 5)
+        if(enemies.live[i] == 1)
         {
-            
-            if(enemies.y[0] >19)
-                enemy_direction = 1;
-            if(enemies.y[0] <3)
-                enemy_direction = 0;
-            
-            if(enemy_direction)
-                enemies.y[0] = enemies.y[0] -1;
-            else
-                enemies.y[0] = enemies.y[0] + 1;
-            
-            timeToUpdate = 0;
+            if ( enemies.timeToUpdate[i] > 5)
+            {
+                
+                if(enemies.y[i] >19)
+                    enemies.direction[i] = 1;
+                if(enemies.y[i] <3)
+                    enemies.direction[i] = 0;
+                
+                if(enemies.direction[i])
+                    enemies.y[i] = enemies.y[i] - enemies.y_vel[i];
+                else
+                    enemies.y[i] = enemies.y[i] + enemies.y_vel[i];
+                
+                 enemies.timeToUpdate[i]= 0;
+            }
         }
+        enemies.timeToUpdate[i]++;
     }
-    timeToUpdate = timeToUpdate + 1;
 
 }
 void checkForCollisions()
@@ -426,8 +438,11 @@ void drawScreen()
     drawProjectiles();
     player.prev_x = player.x;
     player.prev_y = player.y;
-    enemies.prev_x[0] = enemies.x[0];
-    enemies.prev_y[0] = enemies.y[0];
+    for(i = 0; i < MAX_ENEMIES; i++)
+    {
+        enemies.prev_x[i] = enemies.x[i];
+        enemies.prev_y[i] = enemies.y[i];
+    }
 }
 // petscii/uppercase mode 
 #define PETSCII_UPPERCASE_MODE 53272u
@@ -440,11 +455,23 @@ int main(void)
     player.x =5; 
     player.y =5;
     enemies.x[0] = 30;
-    enemies.y[0] = 10;
+    enemies.y[0] = 5;
     enemies.live[0] = 1;
     enemies.hit_points[0] = 5;
     enemies.size_x[0] = 4;
     enemies.size_y[0] = 5;
+    enemies.x_vel[0] = 1;
+    enemies.y_vel[0] = 1;
+    enemies.direction[0] = 1;
+    enemies.x[1] = 20;
+    enemies.y[1] = 15;
+    enemies.live[1] = 1;
+    enemies.hit_points[1] = 6;
+    enemies.size_x[1] = 4;
+    enemies.size_y[1] = 5;
+    enemies.x_vel[1] = 1;
+    enemies.y_vel[1] = 1;
+    enemies.direction[1] = 1;
     player.prev_x = player.x;
     player.prev_y = player.y;
 
