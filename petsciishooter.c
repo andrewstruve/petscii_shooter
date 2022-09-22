@@ -317,22 +317,26 @@ void checkForCollisions()
 {
     for(i = 0; i < MAX_ENEMIES; i++)
     {
-        for( j=0; j < MAX_PROJECTILES; j++ )
+        if(enemies.live[i])
         {
-            // check that enemy is live
-            if(enemies.live[i] && projectiles.projectile_flag[j])
+            for( j=0; j < MAX_PROJECTILES; j++ )
             {
-                if( projectiles.x[j] >= enemies.x[i] && projectiles.x[j] <=  enemies.x[i] + enemies.size_x[i])
+                // check that projectile is live
+                if(projectiles.projectile_flag[j])
                 {
-                    if( projectiles.y[j] >= enemies.y[i] && projectiles.y[j] <= enemies.y[i] + enemies.size_y[i])
+                    if( projectiles.x[j] >= enemies.x[i] && projectiles.x[j] <=  enemies.x[i] + enemies.size_x[i])
                     {
-                        bordercolor (COLOR_RED);
+                        if( projectiles.y[j] >= enemies.y[i] && projectiles.y[j] <= enemies.y[i] + enemies.size_y[i])
+                        {
+                            bordercolor (COLOR_RED);
+                        }
                     }
                 }
             }
         }
     }
-}
+} 
+
 void updateScore()
 {
 
