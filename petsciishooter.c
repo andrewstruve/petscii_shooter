@@ -26,6 +26,8 @@ unsigned char j = 0;
 
 unsigned char joy1, joy2;
 
+unsigned score;
+
 #define MAX_PROJECTILES 5
 typedef struct projectiles_type{
     unsigned char x[MAX_PROJECTILES];
@@ -199,27 +201,30 @@ void clearEnemy()
 {
     for(i = 0; i < MAX_ENEMIES; i++)
     {
-        unsigned base_address = y_lut[enemies.prev_y[i]] + enemies.prev_x[i];
-        POKE(base_address, 0x20);
-        POKE(base_address+1, 0x20);
-        POKE(base_address+2, 0x20);
-        POKE(base_address+3, 0x20);
-        POKE(base_address+40, 0x20);
-        POKE(base_address+41, 0x20);
-        POKE(base_address+42, 0x20);
-        POKE(base_address+43, 0x20);
-        POKE(base_address+80, 0x20);
-        POKE(base_address+81, 0x20);
-        POKE(base_address+82, 0x20);
-        POKE(base_address+83, 0x20);
-        POKE(base_address+120, 0x20);
-        POKE(base_address+121, 0x20);
-        POKE(base_address+122, 0x20);
-        POKE(base_address+123, 0x20);
-        POKE(base_address+160, 0x20);
-        POKE(base_address+161, 0x20);
-        POKE(base_address+162, 0x20);
-        POKE(base_address+163, 0x20); 
+        if(enemies.live[i] || enemies.explode_seq[i])
+        {
+            unsigned base_address = y_lut[enemies.prev_y[i]] + enemies.prev_x[i];
+            POKE(base_address, 0x20);
+            POKE(base_address+1, 0x20);
+            POKE(base_address+2, 0x20);
+            POKE(base_address+3, 0x20);
+            POKE(base_address+40, 0x20);
+            POKE(base_address+41, 0x20);
+            POKE(base_address+42, 0x20);
+            POKE(base_address+43, 0x20);
+            POKE(base_address+80, 0x20);
+            POKE(base_address+81, 0x20);
+            POKE(base_address+82, 0x20);
+            POKE(base_address+83, 0x20);
+            POKE(base_address+120, 0x20);
+            POKE(base_address+121, 0x20);
+            POKE(base_address+122, 0x20);
+            POKE(base_address+123, 0x20);
+            POKE(base_address+160, 0x20);
+            POKE(base_address+161, 0x20);
+            POKE(base_address+162, 0x20);
+            POKE(base_address+163, 0x20); 
+        }
     }   
 }
 void drawEnemy()
@@ -405,6 +410,7 @@ void checkForCollisions()
                                 {
                                     enemies.live[i] = 0;
                                     enemies.explode_seq[i] = 1;
+                                    score = score +10;
                                 }
                             }
                             
@@ -417,9 +423,10 @@ void checkForCollisions()
     }
 } 
 
-void updateScore()
+void drawScore()
 {
-
+    gotoxy(0,0);
+    cprintf("score: %u", score);
 }
 void updateGameLogic()
 {
@@ -427,7 +434,6 @@ void updateGameLogic()
     updateEnemyPositions();
     updateProjectilePositions();
     checkForCollisions();
-    updateScore();
 }
 void drawScreen()
 {
@@ -436,6 +442,7 @@ void drawScreen()
     clearEnemy();
     drawEnemy();
     drawProjectiles();
+    drawScore();
     player.prev_x = player.x;
     player.prev_y = player.y;
     for(i = 0; i < MAX_ENEMIES; i++)
@@ -472,6 +479,15 @@ int main(void)
     enemies.x_vel[1] = 1;
     enemies.y_vel[1] = 1;
     enemies.direction[1] = 1;
+    enemies.x[2] = 15;
+    enemies.y[2] = 10;
+    enemies.live[2] = 1;
+    enemies.hit_points[2] = 6;
+    enemies.size_x[2] = 4;
+    enemies.size_y[2] = 5;
+    enemies.x_vel[2] = 1;
+    enemies.y_vel[2] = 1;
+    enemies.direction[2] = 0;
     player.prev_x = player.x;
     player.prev_y = player.y;
 
