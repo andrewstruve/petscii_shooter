@@ -29,7 +29,7 @@ unsigned char joy1, joy2;
 unsigned score;
 
 #define MAX_PROJECTILES 5
-typedef struct projectiles_type{
+typedef struct player_projectiles_type{
     unsigned char x[MAX_PROJECTILES];
     unsigned char y[MAX_PROJECTILES];
     unsigned char prev_x[MAX_PROJECTILES];
@@ -38,7 +38,18 @@ typedef struct projectiles_type{
     unsigned char y_vel[MAX_PROJECTILES];
     unsigned char projectile_flag[MAX_PROJECTILES];
     unsigned char clear[MAX_PROJECTILES];
-} s_projectiles;
+} s_player_projectiles;
+
+typedef struct enemy_projectiles_type{
+    unsigned char x[MAX_PROJECTILES];
+    unsigned char y[MAX_PROJECTILES];
+    unsigned char prev_x[MAX_PROJECTILES];
+    unsigned char prev_y[MAX_PROJECTILES];
+    unsigned char x_vel[MAX_PROJECTILES];
+    unsigned char y_vel[MAX_PROJECTILES];
+    unsigned char projectile_flag[MAX_PROJECTILES];
+    unsigned char clear[MAX_PROJECTILES];
+} s_enemy_projectiles;
 
 typedef struct player_type{
     unsigned char x;
@@ -65,7 +76,8 @@ typedef struct enemies{
     unsigned char timeToUpdate[MAX_ENEMIES];
 } s_enemies;
 
-s_projectiles projectiles;
+s_enemy_projectiles enemy_projectiles;
+s_player_projectiles player_projectiles;
 s_player player;
 s_enemies enemies;
 
@@ -112,16 +124,16 @@ void drawPlayer()
 }
 void start_projectile()
 {
-    // find first unused projectiles
+    // find first unused player_projectiles
     for (i = 0; i < MAX_PROJECTILES; i++)
     {
-        if(projectiles.projectile_flag[i] == 0)
+        if(player_projectiles.projectile_flag[i] == 0)
         {
-            projectiles.x[i] = player.x + 4;
-            projectiles.y[i] = player.y + 1;
-            projectiles.x_vel[i] = 1;
-            projectiles.y_vel[i] = 0;
-            projectiles.projectile_flag[i] = 1;
+            player_projectiles.x[i] = player.x + 4;
+            player_projectiles.y[i] = player.y + 1;
+            player_projectiles.x_vel[i] = 1;
+            player_projectiles.y_vel[i] = 0;
+            player_projectiles.projectile_flag[i] = 1;
             break;
         }
     }
@@ -157,43 +169,43 @@ void updateProjectilePositions()
 {
     for (i = 0; i < MAX_PROJECTILES; i++)
     {
-        if(projectiles.projectile_flag[i] == 1)
+        if(player_projectiles.projectile_flag[i] == 1)
         {
-            projectiles.prev_x[i] = projectiles.x[i];
-            projectiles.prev_y[i] = projectiles.y[i];
-            projectiles.x[i] = projectiles.x[i]+ projectiles.x_vel[i];
+            player_projectiles.prev_x[i] = player_projectiles.x[i];
+            player_projectiles.prev_y[i] = player_projectiles.y[i];
+            player_projectiles.x[i] = player_projectiles.x[i]+ player_projectiles.x_vel[i];
         }
     }
 }
-void drawProjectiles()
+void drawplayer_projectiles()
 {
     for (i = 0; i < MAX_PROJECTILES; i++)
     {
-        if(projectiles.projectile_flag[i] == 1)
+        if(player_projectiles.projectile_flag[i] == 1)
         {
-            unsigned base_address = y_lut[projectiles.prev_y[i]]+ projectiles.prev_x[i];
+            unsigned base_address = y_lut[player_projectiles.prev_y[i]]+ player_projectiles.prev_x[i];
             // clear old projectile
             POKE(base_address, 0x20);
 
-            if(projectiles.x[i] > 36)
+            if(player_projectiles.x[i] > 36)
             {
-                projectiles.projectile_flag[i] = 0;
-                base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
+                player_projectiles.projectile_flag[i] = 0;
+                base_address = y_lut[player_projectiles.y[i]]+ player_projectiles.x[i];
                 POKE(base_address, 0x20);
             }
             else
             {
-                base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
+                base_address = y_lut[player_projectiles.y[i]]+ player_projectiles.x[i];
                 POKE(base_address, 0x51);
             }
         }
-        if(projectiles.clear[i])
+        if(player_projectiles.clear[i])
         {
-            unsigned base_address = y_lut[projectiles.y[i]]+ projectiles.x[i];
+            unsigned base_address = y_lut[player_projectiles.y[i]]+ player_projectiles.x[i];
             POKE(base_address, 0x20);
-            base_address = y_lut[projectiles.prev_y[i]]+ projectiles.prev_x[i];
+            base_address = y_lut[player_projectiles.prev_y[i]]+ player_projectiles.prev_x[i];
             POKE(base_address, 0x20);
-            projectiles.clear[i] = 0;
+            player_projectiles.clear[i] = 0;
         }
     }
 }
@@ -274,9 +286,6 @@ void drawEnemy()
             POKE(base_address+163, 0x7D);
         }
     }
-    
-
-    
 }
 
 void readJoysticks()
@@ -318,7 +327,7 @@ void updatePlayerPosition()
 {
     if(!(joy2 & JOY_UP) )
     {
-        if(player.y > 0)
+        if(player.y > 1)
         {
             player.y = player.y - 1;
         }
@@ -335,19 +344,22 @@ void updatePlayerPosition()
         
     if(!(joy2 & JOY_LEFT))   
     {
+        /*
         if(player.x > 1)
         {
             player.x = player.x - 1;
         }
+        */
     }  
         
     if(!(joy2 & JOY_RIGHT))
     {
-        
-        if(player.x < 24)
+        /*
+        if(player.x < 5)
         {
             player.x = player.x + 1;
         }
+        */
     }
     // only fire new projectile when the joystick button is pressed down    
     if(!(joy2 & JOY_BUTTON) && prev_joy_button)
@@ -393,16 +405,16 @@ void checkForCollisions()
             for( j=0; j < MAX_PROJECTILES; j++ )
             {
                 // check that projectile is live
-                if(projectiles.projectile_flag[j])
+                if(player_projectiles.projectile_flag[j])
                 {
-                    if( projectiles.x[j] >= enemies.x[i] && projectiles.x[j] <=  enemies.x[i] + enemies.size_x[i])
+                    if( player_projectiles.x[j] >= enemies.x[i] && player_projectiles.x[j] <=  enemies.x[i] + enemies.size_x[i])
                     {
-                        if( projectiles.y[j] >= enemies.y[i] && projectiles.y[j] <= enemies.y[i] + enemies.size_y[i])
+                        if( player_projectiles.y[j] >= enemies.y[i] && player_projectiles.y[j] <= enemies.y[i] + enemies.size_y[i])
                         {
                             bordercolor (COLOR_RED);
                             // disable projectile
-                            projectiles.projectile_flag[j] = 0;
-                            projectiles.clear[j] = 1;
+                            player_projectiles.projectile_flag[j] = 0;
+                            player_projectiles.clear[j] = 1;
                             if(enemies.hit_points[i] > 0)
                             {
                                 enemies.hit_points[i]--;
@@ -412,9 +424,7 @@ void checkForCollisions()
                                     enemies.explode_seq[i] = 1;
                                     score = score +10;
                                 }
-                            }
-                            
-                                
+                            }  
                         }
                     }
                 }
@@ -433,6 +443,7 @@ void updateGameLogic()
     updatePlayerPosition();
     updateEnemyPositions();
     updateProjectilePositions();
+    // update enemy projectiles
     checkForCollisions();
 }
 void drawScreen()
@@ -441,7 +452,7 @@ void drawScreen()
     drawPlayer();
     clearEnemy();
     drawEnemy();
-    drawProjectiles();
+    drawplayer_projectiles();
     drawScore();
     player.prev_x = player.x;
     player.prev_y = player.y;
@@ -459,7 +470,7 @@ int main(void)
     textcolor (COLOR_GREEN);
     bordercolor (COLOR_GREEN);
     bgcolor (COLOR_BLACK);
-    player.x =5; 
+    player.x =1; 
     player.y =5;
     enemies.x[0] = 30;
     enemies.y[0] = 5;
